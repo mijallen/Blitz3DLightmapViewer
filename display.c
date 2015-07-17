@@ -75,6 +75,7 @@ void error(const char* message) {
 */
 
 /* PNG loading function */
+/* thank you to http://zarb.org/~gc/html/libpng.html */
 
 Image* loadPNGImage(const char* filePath) {
     Image* output = NULL;
@@ -232,6 +233,27 @@ void drawB3D(B3DFile* b3d) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+int* loadTextures(B3DFile* b3d) {
+    int* output;
+    Blitz3DTEXSChunk* texsChunk;
+    Blitz3DBRUSChunk* brusChunk;
+    int texturesPerBrush;
+    unsigned int textureCount;
+    unsigned int iter;
+
+    texsChunk = getTEXSChunkFromBB3DChunk(getBB3DChunkFromFile(b3d));
+    brusChunk = getBRUSChunkFromBB3DChunk(getBB3DChunkFromFile(b3d));
+
+    texturesPerBrush = getNumberOfTexturesFromBRUSChunk(brusChunk);
+    if (texturesPerBrush < 2) return NULL;
+
+    textureCount = getTextureArrayCountFromTEXSChunk(texsChunk);
+
+    for (iter = 0; iter < textureCount; iter++) {
+        printf("texture: %s\n", getFileFromTexture(getTextureArrayEntryFromTEXSChunk(texsChunk, iter)));
+    }
+}
+
 /* actual program */
 
 int main(int argc, char* argv[]) {
@@ -253,6 +275,12 @@ int main(int argc, char* argv[]) {
     printf(" -alpha present = %d\n", (int)(lightmap->format->Amask != 0));
 
     b3dTest = loadB3DFile("test1/test1.b3d");
+
+    printf("textures:\n");
+    printf("directory: %s\n", getDirectoryFromFile(b3dTest));
+    printf("texture count: %d\n", getNumberOfTexturesFromBRUSChunk(getBRUSChunkFromBB3DChunk(getBB3DChunkFromFile(b3dTest))));
+
+    loadTextures(b3dTest);
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -292,7 +320,7 @@ int main(int argc, char* argv[]) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lightmap->w, lightmap->h, 0, GL_RGB, GL_UNSIGNED_BYTE, lightmap->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lightmap->w, lightmap->h, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, lightmap->pixels);
 
     SDL_FreeSurface(lightmap);
 

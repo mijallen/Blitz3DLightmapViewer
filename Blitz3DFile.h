@@ -53,6 +53,26 @@ B3DFile* loadB3DFile(const char* filePath);
 
 Blitz3DBB3DChunk* getBB3DChunkFromFile(B3DFile* blitz3dFile);
 
+char* getDirectoryFromFile(B3DFile* blitz3dFile);
+
+Blitz3DTEXSChunk* getTEXSChunkFromBB3DChunk(Blitz3DBB3DChunk* bb3dChunk);
+
+unsigned int getTextureArrayCountFromTEXSChunk(Blitz3DTEXSChunk* texsChunk);
+
+Blitz3DTexture* getTextureArrayEntryFromTEXSChunk(Blitz3DTEXSChunk* texsChunk, unsigned int index);
+
+char* getFileFromTexture(Blitz3DTexture* texture);
+
+Blitz3DBRUSChunk* getBRUSChunkFromBB3DChunk(Blitz3DBB3DChunk* bb3dChunk);
+
+int getNumberOfTexturesFromBRUSChunk(Blitz3DBRUSChunk* brusChunk);
+
+unsigned int getBrushArrayCountFromBRUSChunk(Blitz3DBRUSChunk* brusChunk);
+
+Blitz3DBrush* getBrushArrayEntryFromBRUSChunk(Blitz3DBRUSChunk* brusChunk, unsigned int index);
+
+int getTextureIdArrayEntryFromBrush(Blitz3DBrush* brush, unsigned int index);
+
 Blitz3DNODEChunk* getNODEChunkFromBB3DChunk(Blitz3DBB3DChunk* bb3dChunk);
 
 Blitz3DMESHChunk* getMESHChunkFromNODEChunk(Blitz3DNODEChunk* nodeChunk);

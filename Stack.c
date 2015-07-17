@@ -15,8 +15,11 @@ struct Stack {
 
 Stack* createStack() {
     Stack* stack = (Stack*)malloc(sizeof(Stack));
+
     stack->head = NULL;
     stack->count = 0;
+
+    return stack;
 }
 
 void freeStack(Stack* stack) {

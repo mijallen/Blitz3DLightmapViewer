@@ -125,7 +125,7 @@ struct Blitz3DBB3DChunk {
 
 struct B3DFile {
     Blitz3DBB3DChunk* bb3dChunk;
-    /*char* filePath;*/
+    char* directory;
 };
 
 /* binary read functions */
@@ -625,8 +625,9 @@ Blitz3DBB3DChunk* readBlitz3DBB3DChunk(FILE* fp) {
 /* public functions */
 
 B3DFile* loadB3DFile(const char* filePath) {
-    /*Blitz3DBB3DChunk* fileData;*/
     B3DFile* output;
+    char* relativePath;
+    char* lastSlash;
     char id[4];
 
     FILE* fp = fopen(filePath, "rb");
@@ -644,6 +645,18 @@ B3DFile* loadB3DFile(const char* filePath) {
 
     output = (B3DFile*)malloc(sizeof(B3DFile));
     output->bb3dChunk = readBlitz3DBB3DChunk(fp);
+
+    relativePath = (char*)calloc(strlen(filePath) + 3, sizeof(char));
+    sprintf(relativePath, "./%s", filePath);
+
+    lastSlash = relativePath + strlen(relativePath) - 1;
+    for (; *lastSlash != '/'; lastSlash--) ;
+    *lastSlash = '\0';
+
+    output->directory = (char*)calloc(strlen(relativePath) + 2, sizeof(char));
+    sprintf(output->directory, "%s/", relativePath);
+
+    free(relativePath);
 
     printf("\n---final results---\n");
     printf("file version = %d\n", output->bb3dChunk->version);
@@ -701,6 +714,8 @@ B3DFile* loadB3DFile(const char* filePath) {
     printf("y of first vertex = %g\n", output->bb3dChunk->nodeChunk->nodeChunkArray[0]->meshChunk->vrtsChunk->vertexArray[1]);
     printf("z of first vertex = %g\n", output->bb3dChunk->nodeChunk->nodeChunkArray[0]->meshChunk->vrtsChunk->vertexArray[2]);
 
+    printf("directory = %s\n", output->directory);
+
     fclose(fp);
 
     return output;
@@ -708,6 +723,46 @@ B3DFile* loadB3DFile(const char* filePath) {
 
 Blitz3DBB3DChunk* getBB3DChunkFromFile(B3DFile* blitz3dFile) {
     return blitz3dFile->bb3dChunk;
+}
+
+char* getDirectoryFromFile(B3DFile* blitz3dFile) {
+    return blitz3dFile->directory;
+}
+
+Blitz3DTEXSChunk* getTEXSChunkFromBB3DChunk(Blitz3DBB3DChunk* bb3dChunk) {
+    return bb3dChunk->texsChunk;
+}
+
+unsigned int getTextureArrayCountFromTEXSChunk(Blitz3DTEXSChunk* texsChunk) {
+    return texsChunk->textureCount;
+}
+
+Blitz3DTexture* getTextureArrayEntryFromTEXSChunk(Blitz3DTEXSChunk* texsChunk, unsigned int index) {
+    return texsChunk->textureArray[index];
+}
+
+char* getFileFromTexture(Blitz3DTexture* texture) {
+    return texture->file;
+}
+
+Blitz3DBRUSChunk* getBRUSChunkFromBB3DChunk(Blitz3DBB3DChunk* bb3dChunk) {
+    return bb3dChunk->brusChunk;
+}
+
+int getNumberOfTexturesFromBRUSChunk(Blitz3DBRUSChunk* brusChunk) {
+    return brusChunk->n_texs;
+}
+
+unsigned int getBrushArrayCountFromBRUSChunk(Blitz3DBRUSChunk* brusChunk) {
+    return brusChunk->brushCount;
+}
+
+Blitz3DBrush* getBrushArrayEntryFromBRUSChunk(Blitz3DBRUSChunk* brusChunk, unsigned int index) {
+    return brusChunk->brushArray[index];
+}
+
+int getTextureIdArrayEntryFromBrush(Blitz3DBrush* brush, unsigned int index) {
+    return brush->texture_id[index];
 }
 
 Blitz3DNODEChunk* getNODEChunkFromBB3DChunk(Blitz3DBB3DChunk* bb3dChunk) {
