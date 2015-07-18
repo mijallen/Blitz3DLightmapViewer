@@ -793,6 +793,10 @@ Blitz3DTRISChunk* getTRISChunkArrayEntryFromMESHChunk(Blitz3DMESHChunk* meshChun
     return meshChunk->trisChunkArray[index];
 }
 
+int getBrushIdFromMESHChunk(Blitz3DMESHChunk* meshChunk) {
+    return meshChunk->brush_id;
+}
+
 float* getVertexArrayFromVRTSChunk(Blitz3DVRTSChunk* vrtsChunk) {
     return vrtsChunk->vertexArray;
 }
@@ -831,4 +835,8 @@ unsigned getTriangleCountFromTRISChunk(Blitz3DTRISChunk* trisChunk) {
 
 int* getTriangleIndexArrayFromTRISChunk(Blitz3DTRISChunk* trisChunk) {
     return trisChunk->indexArray;
+}
+
+int getBrushIdFromTRISChunk(Blitz3DTRISChunk* trisChunk) {
+    return trisChunk->brush_id;
 }

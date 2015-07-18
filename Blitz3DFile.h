@@ -87,6 +87,8 @@ unsigned int getTRISChunkArrayCountFromMESHChunk(Blitz3DMESHChunk* meshChunk);
 
 Blitz3DTRISChunk* getTRISChunkArrayEntryFromMESHChunk(Blitz3DMESHChunk* meshChunk, unsigned int index);
 
+int getBrushIdFromMESHChunk(Blitz3DMESHChunk* meshChunk);
+
 float* getVertexArrayFromVRTSChunk(Blitz3DVRTSChunk* vrtsChunk);
 
 float* getNormalArrayFromVRTSChunk(Blitz3DVRTSChunk* vrtsChunk);
@@ -106,5 +108,7 @@ int colorArrayPresentInVRTSChunk(Blitz3DVRTSChunk* vrtsChunk);
 unsigned getTriangleCountFromTRISChunk(Blitz3DTRISChunk* trisChunk);
 
 int* getTriangleIndexArrayFromTRISChunk(Blitz3DTRISChunk* trisChunk);
+
+int getBrushIdFromTRISChunk(Blitz3DTRISChunk* trisChunk);
 
 #endif

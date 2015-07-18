@@ -155,9 +155,13 @@ void drawMesh(Blitz3DMESHChunk* mesh) {
     unsigned int iter;
     unsigned int texCoordCount;
     unsigned int texCoordComponentCount;
+    int meshBrushId;
     Blitz3DVRTSChunk* vrtsChunk;
-    Blitz3DTRISChunk* trisChunk;
+    Blitz3DBRUSChunk* brusChunk;
 
+    meshBrushId = getBrushIdFromMESHChunk(mesh);
+
+    brusChunk = getBRUSChunkFromBB3DChunk( getBB3DChunkFromFile(b3dTest) );
     vrtsChunk = getVRTSChunkFromMESHChunk(mesh);
 
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -176,22 +180,31 @@ void drawMesh(Blitz3DMESHChunk* mesh) {
     texCoordCount = getTexCoordArrayCountFromVRTSChunk(vrtsChunk);
     texCoordComponentCount = getTexCoordArrayComponentCountFromVRTSChunk(vrtsChunk);
 
-    glActiveTextureARB(GL_TEXTURE0_ARB);
-    glBindTexture(GL_TEXTURE_2D, textures[0]);
-
     glClientActiveTextureARB(GL_TEXTURE0_ARB);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(texCoordComponentCount, GL_FLOAT, 0, getTexCoordArrayEntryFromVRTSChunk(vrtsChunk, 0));
-
-    glActiveTextureARB(GL_TEXTURE1_ARB);
-    glBindTexture(GL_TEXTURE_2D, textures[1]);
 
     glClientActiveTextureARB(GL_TEXTURE1_ARB);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(texCoordComponentCount, GL_FLOAT, 0, getTexCoordArrayEntryFromVRTSChunk(vrtsChunk, 1));
 
     for (iter = 0; iter < getTRISChunkArrayCountFromMESHChunk(mesh); iter++) {
+        Blitz3DTRISChunk* trisChunk;
+        Blitz3DBrush* brush;
+        int trisBrushId;
+
         trisChunk = getTRISChunkArrayEntryFromMESHChunk(mesh, iter);
+
+        trisBrushId = getBrushIdFromTRISChunk(trisChunk);
+        if (trisBrushId == -1) trisBrushId = meshBrushId;
+
+        brush = getBrushArrayEntryFromBRUSChunk(brusChunk, trisBrushId);
+
+        glActiveTextureARB(GL_TEXTURE0_ARB);
+        glBindTexture(GL_TEXTURE_2D, textures[getTextureIdArrayEntryFromBrush(brush, 1)]);
+
+        glActiveTextureARB(GL_TEXTURE1_ARB);
+        glBindTexture(GL_TEXTURE_2D, textures[getTextureIdArrayEntryFromBrush(brush, 0)]);
 
         glDrawElements(GL_TRIANGLES, 3 * getTriangleCountFromTRISChunk(trisChunk),
             GL_UNSIGNED_INT, getTriangleIndexArrayFromTRISChunk(trisChunk));
