@@ -20,9 +20,10 @@ SDL_Event event;
 const Uint8* keyPress;
 int quit = 0;
 
-int textureID = 0;
-int lightmapID = 0;
 float angle = 0.f;
+
+B3DFile* b3dTest;
+int* textures;
 
 void (APIENTRY * glActiveTextureARB)(unsigned int) = NULL;
 void (APIENTRY * glClientActiveTextureARB)(unsigned int) = NULL;
@@ -176,14 +177,14 @@ void drawMesh(Blitz3DMESHChunk* mesh) {
     texCoordComponentCount = getTexCoordArrayComponentCountFromVRTSChunk(vrtsChunk);
 
     glActiveTextureARB(GL_TEXTURE0_ARB);
-    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
 
     glClientActiveTextureARB(GL_TEXTURE0_ARB);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(texCoordComponentCount, GL_FLOAT, 0, getTexCoordArrayEntryFromVRTSChunk(vrtsChunk, 0));
 
     glActiveTextureARB(GL_TEXTURE1_ARB);
-    glBindTexture(GL_TEXTURE_2D, lightmapID);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
 
     glClientActiveTextureARB(GL_TEXTURE1_ARB);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -233,54 +234,95 @@ void drawB3D(B3DFile* b3d) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+int loadPNGTexture(char* filePath) {
+    int texture;
+    Image* pngImage = loadPNGImage(filePath);
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    if (pngImage->colorType == PNG_COLOR_TYPE_RGB)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pngImage->width, pngImage->height, 0, GL_RGB, GL_UNSIGNED_BYTE, pngImage->data);
+    else if (pngImage->colorType == PNG_COLOR_TYPE_RGBA)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pngImage->width, pngImage->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pngImage->data);
+
+    free(pngImage->data);
+    free(pngImage);
+
+    return texture;
+}
+
+int loadBMPTexture(char* filePath) {
+    int texture;
+    SDL_Surface* bmpImage = SDL_LoadBMP(filePath);
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmpImage->w, bmpImage->h, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, bmpImage->pixels);
+
+    SDL_FreeSurface(bmpImage);
+
+    return texture;
+}
+
 int* loadTextures(B3DFile* b3d) {
     int* output;
     Blitz3DTEXSChunk* texsChunk;
-    Blitz3DBRUSChunk* brusChunk;
-    int texturesPerBrush;
     unsigned int textureCount;
     unsigned int iter;
 
     texsChunk = getTEXSChunkFromBB3DChunk(getBB3DChunkFromFile(b3d));
-    brusChunk = getBRUSChunkFromBB3DChunk(getBB3DChunkFromFile(b3d));
-
-    texturesPerBrush = getNumberOfTexturesFromBRUSChunk(brusChunk);
-    if (texturesPerBrush < 2) return NULL;
-
     textureCount = getTextureArrayCountFromTEXSChunk(texsChunk);
 
+    output = (int*)calloc(textureCount, sizeof(int));
+    glEnable(GL_TEXTURE_2D);
+
     for (iter = 0; iter < textureCount; iter++) {
-        printf("texture: %s\n", getFileFromTexture(getTextureArrayEntryFromTEXSChunk(texsChunk, iter)));
+        char* directoryPath;
+        char* fileName;
+        char* filePath;
+
+        directoryPath = getDirectoryFromFile(b3d);
+        fileName = getFileFromTexture(getTextureArrayEntryFromTEXSChunk(texsChunk, iter));
+
+        filePath = (char*)calloc(strlen(directoryPath) + strlen(fileName) + 1, sizeof(char));
+        sprintf(filePath, "%s%s", directoryPath, fileName);
+
+        printf("full path: %s\n", filePath);
+
+        if (filePath[strlen(filePath) - 1] == 'g') {
+            printf(" is a PNG image\n");
+            output[iter] = loadPNGTexture(filePath);
+            printf(" texture id: %d\n", output[iter]);
+        }
+
+        if (filePath[strlen(filePath) - 1] == 'p') {
+            printf(" is a BMP image\n");
+            output[iter] = loadBMPTexture(filePath);
+            printf(" texture id: %d\n", output[iter]);
+        }
+
+        free(filePath);
     }
+
+    return output;
 }
 
 /* actual program */
 
 int main(int argc, char* argv[]) {
-    B3DFile* b3dTest;
-    SDL_Surface* lightmap = NULL;
-    Image* test = loadPNGImage("test1/AMDfieldstone.png");
-
-    printf("image stats:\n");
-    printf(" -width = %d\n", test->width);
-    printf(" -height = %d\n", test->height);
-    printf(" -RGBA = %d\n", (int)(test->colorType == PNG_COLOR_TYPE_RGBA));
-    printf(" -RGB = %d\n", (int)(test->colorType == PNG_COLOR_TYPE_RGB));
-
-    lightmap = SDL_LoadBMP("test1/test1_lm1.bmp");
-
-    printf("lightmap stats:\n");
-    printf(" -width = %d\n", lightmap->w);
-    printf(" -height = %d\n", lightmap->h);
-    printf(" -alpha present = %d\n", (int)(lightmap->format->Amask != 0));
-
     b3dTest = loadB3DFile("test1/test1.b3d");
 
     printf("textures:\n");
     printf("directory: %s\n", getDirectoryFromFile(b3dTest));
     printf("texture count: %d\n", getNumberOfTexturesFromBRUSChunk(getBRUSChunkFromBB3DChunk(getBB3DChunkFromFile(b3dTest))));
-
-    loadTextures(b3dTest);
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -296,35 +338,9 @@ int main(int argc, char* argv[]) {
 
     glClearColor(0.f, 0.f, 0.5f, 1.f);
 
-    /* texture loading */
-
-    glEnable(GL_TEXTURE_2D);
-
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    if (test->colorType == PNG_COLOR_TYPE_RGB)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, test->width, test->height, 0, GL_RGB, GL_UNSIGNED_BYTE, test->data);
-    else if (test->colorType == PNG_COLOR_TYPE_RGBA)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, test->width, test->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, test->data);
-
-    free(test->data);
-    free(test);
-
-    glGenTextures(1, &lightmapID);
-    glBindTexture(GL_TEXTURE_2D, lightmapID);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lightmap->w, lightmap->h, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, lightmap->pixels);
-
-    SDL_FreeSurface(lightmap);
-
     /* multitexture setup */
+
+    textures = loadTextures(b3dTest);
 
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
