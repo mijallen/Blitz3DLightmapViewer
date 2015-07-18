@@ -20,6 +20,7 @@ SDL_Event event;
 const Uint8* keyPress;
 int quit = 0;
 
+/* commentary: replace this with camera control variables */
 float angle = 0.f;
 
 B3DFile* b3dTest;
@@ -29,6 +30,8 @@ void (APIENTRY * glActiveTextureARB)(unsigned int) = NULL;
 void (APIENTRY * glClientActiveTextureARB)(unsigned int) = NULL;
 
 /* image structure */
+
+/* commentary: consider moving this to its own file (along with png reading code) */
 
 typedef struct Image Image;
 struct Image {
@@ -41,6 +44,8 @@ void error(const char* message) {
     fprintf(stderr, "ERROR: %s\n", message);
     exit(1);
 }
+
+/* commentary: old comments below, mostly here for reference */
 
 /*
     idea:
@@ -200,6 +205,8 @@ void drawMesh(Blitz3DMESHChunk* mesh) {
 
         brush = getBrushArrayEntryFromBRUSChunk(brusChunk, trisBrushId);
 
+        /* commentary: not sure why the brush textures seem reversed here! */
+
         glActiveTextureARB(GL_TEXTURE0_ARB);
         glBindTexture(GL_TEXTURE_2D, textures[getTextureIdArrayEntryFromBrush(brush, 1)]);
 
@@ -224,6 +231,8 @@ void drawMesh(Blitz3DMESHChunk* mesh) {
 void drawNode(Blitz3DNODEChunk* node) {
     unsigned int iter;
 
+    /* commentary: still need to apply matrix transforms per node */
+
     if (getMESHChunkFromNODEChunk(node) != NULL) {
         drawMesh( getMESHChunkFromNODEChunk(node) );
     }
@@ -234,14 +243,6 @@ void drawNode(Blitz3DNODEChunk* node) {
 }
 
 void drawB3D(B3DFile* b3d) {
-    glMatrixMode(GL_PROJECTION);
-    gluPerspective(70.0, 1.333, 1, 1000);
-
-    glMatrixMode(GL_MODELVIEW);
-    glTranslatef(0.f, -50.f, -100.f);
-    glRotatef(angle, 0.f, 1.f, 0.f); angle += 1.f;
-    glScalef(1.f, 1.f, -1.f);
-
     drawNode( getNODEChunkFromBB3DChunk( getBB3DChunkFromFile(b3d) ) );
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -308,18 +309,18 @@ int* loadTextures(B3DFile* b3d) {
         filePath = (char*)calloc(strlen(directoryPath) + strlen(fileName) + 1, sizeof(char));
         sprintf(filePath, "%s%s", directoryPath, fileName);
 
-        printf("full path: %s\n", filePath);
+        /*printf("full path: %s\n", filePath);*/
 
         if (filePath[strlen(filePath) - 1] == 'g') {
-            printf(" is a PNG image\n");
+            /*printf(" is a PNG image\n");*/
             output[iter] = loadPNGTexture(filePath);
-            printf(" texture id: %d\n", output[iter]);
+            /*printf(" texture id: %d\n", output[iter]);*/
         }
 
         if (filePath[strlen(filePath) - 1] == 'p') {
-            printf(" is a BMP image\n");
+            /*printf(" is a BMP image\n");*/
             output[iter] = loadBMPTexture(filePath);
-            printf(" texture id: %d\n", output[iter]);
+            /*printf(" texture id: %d\n", output[iter]);*/
         }
 
         free(filePath);
@@ -331,12 +332,17 @@ int* loadTextures(B3DFile* b3d) {
 /* actual program */
 
 int main(int argc, char* argv[]) {
-    b3dTest = loadB3DFile("test1/test1.b3d");
+    char* b3dFilePath;
 
+    if (argc < 2) b3dFilePath = "test1/test1.b3d";
+    else b3dFilePath = argv[1];
+
+    b3dTest = loadB3DFile(b3dFilePath);
+/*
     printf("textures:\n");
     printf("directory: %s\n", getDirectoryFromFile(b3dTest));
     printf("texture count: %d\n", getNumberOfTexturesFromBRUSChunk(getBRUSChunkFromBB3DChunk(getBB3DChunkFromFile(b3dTest))));
-
+*/
     SDL_Init(SDL_INIT_VIDEO);
 
     glWindow = SDL_CreateWindow("B3D Lightmap Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -349,9 +355,9 @@ int main(int argc, char* argv[]) {
 
     keyPress = SDL_GetKeyboardState(NULL);
 
-    glClearColor(0.f, 0.f, 0.5f, 1.f);
-
     /* multitexture setup */
+
+    /* commentary: possible support for more than 2 texture layers? if necessary. */
 
     textures = loadTextures(b3dTest);
 
@@ -363,6 +369,17 @@ int main(int argc, char* argv[]) {
     glActiveTextureARB(GL_TEXTURE1_ARB);
     glEnable(GL_TEXTURE_2D);
 
+    /* OpenGL initial setup */
+
+    glClearColor(0.f, 0.f, 0.5f, 1.f);
+
+    glEnable(GL_DEPTH_TEST);
+
+    glMatrixMode(GL_PROJECTION);
+    gluPerspective(70.0, 1.333, 10, 10000);
+
+    glMatrixMode(GL_MODELVIEW);
+
     /* main loop */
 
     while (!quit) {
@@ -372,19 +389,21 @@ int main(int argc, char* argv[]) {
 
         if (keyPress[SDL_SCANCODE_ESCAPE]) quit = 1;
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glMatrixMode(GL_MODELVIEW);
+        /* construct the view matrix */
         glLoadIdentity();
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
+        glTranslatef(0.f, -50.f, -100.f);
+        glRotatef(angle, 0.f, 1.f, 0.f); angle += 1.f;
+        glScalef(1.f, 1.f, -1.f);
 
         drawB3D(b3dTest);
 
         SDL_GL_SwapWindow(glWindow);
         SDL_Delay(16);
     }
+
+    /* commentary: still need to clear the loaded data from memory */
 
     SDL_DestroyWindow(glWindow);
     SDL_Quit();

@@ -123,12 +123,16 @@ struct Blitz3DBB3DChunk {
     int version;
 };
 
+/* commentary: this name might be changed to Blitz3DFile? */
+
 struct B3DFile {
     Blitz3DBB3DChunk* bb3dChunk;
     char* directory;
 };
 
 /* binary read functions */
+
+/* commentary: consider adding a float-reading function */
 
 char* readStringFromBinaryFile(FILE* fp) {
     int position = 0;
@@ -211,7 +215,7 @@ Blitz3DTEXSChunk* readBlitz3DTEXSChunk(FILE* fp) {
 
     read32BitIntegerFromBinaryFile(fp, &size, 1);
 
-    printf("size = %d\n", size);
+    /*printf("size = %d\n", size);*/
     startingPoint = ftell(fp);
 
     /* reading stuff here */
@@ -240,7 +244,7 @@ Blitz3DTEXSChunk* readBlitz3DTEXSChunk(FILE* fp) {
         output->textureArray[output->textureCount - iter - 1] = (Blitz3DTexture*)popOffOfStack(textureStack);
     }
 
-    fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);
+    /*fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);*/
 
     freeStack(textureStack);
 
@@ -257,14 +261,14 @@ Blitz3DBRUSChunk* readBlitz3DBRUSChunk(FILE* fp) {
 
     read32BitIntegerFromBinaryFile(fp, &size, 1);
 
-    printf("size = %d\n", size);
+    /*printf("size = %d\n", size);*/
     startingPoint = ftell(fp);
 
     /* reading stuff here */
 
     read32BitIntegerFromBinaryFile(fp, &(output->n_texs), 1);
 
-    printf("nTexs = %d\n", output->n_texs);
+    /*printf("nTexs = %d\n", output->n_texs);*/
 
     while (ftell(fp) < startingPoint + size) {
         Blitz3DBrush* brush = (Blitz3DBrush*)malloc(sizeof(Blitz3DBrush));
@@ -297,7 +301,7 @@ Blitz3DBRUSChunk* readBlitz3DBRUSChunk(FILE* fp) {
         output->brushArray[output->brushCount - iter - 1] = (Blitz3DBrush*)popOffOfStack(brushStack);
     }
 
-    fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);
+    /*fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);*/
 
     freeStack(brushStack);
 
@@ -314,16 +318,18 @@ Blitz3DVRTSChunk* readBlitz3DVRTSChunk(FILE* fp) {
 
     read32BitIntegerFromBinaryFile(fp, &size, 1);
 
-    printf("size = %d\n", size);
+    /*printf("size = %d\n", size);*/
     startingPoint = ftell(fp);
 
     read32BitIntegerFromBinaryFile(fp, &(output->flags), 1);
     read32BitIntegerFromBinaryFile(fp, &(output->tex_coord_sets), 1);
     read32BitIntegerFromBinaryFile(fp, &(output->tex_coord_set_size), 1);
 
-    printf("flags = %d\n", output->flags);
+    /*printf("flags = %d\n", output->flags);
     printf("tex_coord_sets = %d\n", output->tex_coord_sets);
-    printf("tex_coord_set_size = %d\n", output->tex_coord_set_size);
+    printf("tex_coord_set_size = %d\n", output->tex_coord_set_size);*/
+
+    /* commentary: consider alternative approach of refering to size and doing fixed iteration count */
 
     while (ftell(fp) < startingPoint + size) {
         Blitz3DVertex* vertex = (Blitz3DVertex*)malloc(sizeof(Blitz3DVertex));
@@ -411,7 +417,7 @@ Blitz3DVRTSChunk* readBlitz3DVRTSChunk(FILE* fp) {
         free(vertex);
     }
 
-    fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);
+    /*fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);*/
 
     freeStack(vertexStack);
 
@@ -428,11 +434,11 @@ Blitz3DTRISChunk* readBlitz3DTRISChunk(FILE* fp) {
 
     read32BitIntegerFromBinaryFile(fp, &size, 1);
 
-    printf("size = %d\n", size);
+    /*printf("size = %d\n", size);*/
     startingPoint = ftell(fp);
 
     read32BitIntegerFromBinaryFile(fp, &(output->brush_id), 1);
-    printf("brush_id = %d\n", output->brush_id);
+    /*printf("brush_id = %d\n", output->brush_id);*/
 
     while (ftell(fp) < startingPoint + size) {
         Blitz3DTriangle* triangle = (Blitz3DTriangle*)malloc(sizeof(Blitz3DTriangle));
@@ -458,7 +464,7 @@ Blitz3DTRISChunk* readBlitz3DTRISChunk(FILE* fp) {
         free(triangle);
     }
 
-    fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);
+    /*fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);*/
 
     freeStack(triangleStack);
 
@@ -475,16 +481,16 @@ Blitz3DMESHChunk* readBlitz3DMESHChunk(FILE* fp) {
 
     read32BitIntegerFromBinaryFile(fp, &size, 1);
 
-    printf("size = %d\n", size);
+    /*printf("size = %d\n", size);*/
     startingPoint = ftell(fp);
 
     read32BitIntegerFromBinaryFile(fp, &(output->brush_id), 1);
-    printf("brush_id = %d\n", output->brush_id);
+    /*printf("brush_id = %d\n", output->brush_id);*/
 
     read32BitIntegerFromBinaryFile(fp, &id, 1);
 
     if (id == BLITZ3D_TAG_VRTS_LITTLE_ENDIAN) {
-        printf("VRTS chunk\n");
+        /*printf("VRTS chunk\n");*/
 
         output->vrtsChunk = readBlitz3DVRTSChunk(fp);
     }
@@ -495,7 +501,7 @@ Blitz3DMESHChunk* readBlitz3DMESHChunk(FILE* fp) {
         if (id == BLITZ3D_TAG_TRIS_LITTLE_ENDIAN) {
             Blitz3DTRISChunk* tris;
 
-            printf("TRIS chunk\n");
+            /*printf("TRIS chunk\n");*/
 
             tris = readBlitz3DTRISChunk(fp);
             pushOntoStack(trisStack, (void*)tris);
@@ -509,7 +515,7 @@ Blitz3DMESHChunk* readBlitz3DMESHChunk(FILE* fp) {
         output->trisChunkArray[output->trisChunkCount - iter - 1] = (Blitz3DTRISChunk*)popOffOfStack(trisStack);
     }
 
-    fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);
+    /*fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);*/
 
     freeStack(trisStack);
 
@@ -526,7 +532,7 @@ Blitz3DNODEChunk* readBlitz3DNODEChunk(FILE* fp) {
 
     read32BitIntegerFromBinaryFile(fp, &size, 1);
 
-    printf("size = %d\n", size);
+    /*printf("size = %d\n", size);*/
     startingPoint = ftell(fp);
 
     output->name = readStringFromBinaryFile(fp);
@@ -550,13 +556,13 @@ Blitz3DNODEChunk* readBlitz3DNODEChunk(FILE* fp) {
         if (id == BLITZ3D_TAG_NODE_LITTLE_ENDIAN) {
             Blitz3DNODEChunk* node;
 
-            printf("NODE chunk (child)\n");
+            /*printf("NODE chunk (child)\n");*/
 
             node = readBlitz3DNODEChunk(fp);
             pushOntoStack(nodeStack, (void*)node);
         }
         else if (id == BLITZ3D_TAG_MESH_LITTLE_ENDIAN) {
-            printf("MESH chunk\n");
+            /*printf("MESH chunk\n");*/
 
             output->meshChunk = readBlitz3DMESHChunk(fp);
         }
@@ -572,7 +578,7 @@ Blitz3DNODEChunk* readBlitz3DNODEChunk(FILE* fp) {
         output->nodeChunkArray[output->nodeChunkCount - iter - 1] = (Blitz3DNODEChunk*)popOffOfStack(nodeStack);
     }
 
-    fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);
+    /*fseek(fp, size + startingPoint - ftell(fp), SEEK_CUR);*/
 
     freeStack(nodeStack);
 
@@ -586,8 +592,8 @@ Blitz3DBB3DChunk* readBlitz3DBB3DChunk(FILE* fp) {
     read32BitIntegerFromBinaryFile(fp, &size, 1);
     read32BitIntegerFromBinaryFile(fp, &version, 1);
 
-    printf("size = %d\n", size);
-    printf("version = %d\n", version);
+    /*printf("size = %d\n", size);
+    printf("version = %d\n", version);*/
 
     output = (Blitz3DBB3DChunk*)calloc(1, sizeof(Blitz3DBB3DChunk));
     output->version = version;
@@ -597,25 +603,25 @@ Blitz3DBB3DChunk* readBlitz3DBB3DChunk(FILE* fp) {
     read32BitIntegerFromBinaryFile(fp, &id, 1);
 
     if (id == BLITZ3D_TAG_TEXS_LITTLE_ENDIAN) {
-        printf("TEXS chunk\n");
+        /*printf("TEXS chunk\n");*/
         output->texsChunk = readBlitz3DTEXSChunk(fp);
+
+        read32BitIntegerFromBinaryFile(fp, &id, 1);
     }
 
     /* attempt to handle BRUS chunk */
 
-    read32BitIntegerFromBinaryFile(fp, &id, 1);
-
     if (id == BLITZ3D_TAG_BRUS_LITTLE_ENDIAN) {
-        printf("BRUS chunk\n");
+        /*printf("BRUS chunk\n");*/
         output->brusChunk = readBlitz3DBRUSChunk(fp);
+
+        read32BitIntegerFromBinaryFile(fp, &id, 1);
     }
 
     /* attempt to handle NODE chunk */
 
-    read32BitIntegerFromBinaryFile(fp, &id, 1);
-
     if (id == BLITZ3D_TAG_NODE_LITTLE_ENDIAN) {
-        printf("NODE chunk\n");
+        /*printf("NODE chunk\n");*/
         output->nodeChunk = readBlitz3DNODEChunk(fp);
     }
 
@@ -657,7 +663,7 @@ B3DFile* loadB3DFile(const char* filePath) {
     sprintf(output->directory, "%s/", relativePath);
 
     free(relativePath);
-
+/*
     printf("\n---final results---\n");
     printf("file version = %d\n", output->bb3dChunk->version);
 
@@ -715,7 +721,7 @@ B3DFile* loadB3DFile(const char* filePath) {
     printf("z of first vertex = %g\n", output->bb3dChunk->nodeChunk->nodeChunkArray[0]->meshChunk->vrtsChunk->vertexArray[2]);
 
     printf("directory = %s\n", output->directory);
-
+*/
     fclose(fp);
 
     return output;
