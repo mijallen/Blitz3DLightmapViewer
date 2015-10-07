@@ -5,6 +5,9 @@
 #include <SDL_opengl.h>
 #include <GL/glu.h>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 #include <png.h>
 
 #include "Blitz3DFile.h"
@@ -14,14 +17,15 @@
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 
+#define MOUSE_HORIZONTAL_SENSITIVITY 0.5
+#define MOUSE_VERTICAL_SENSITIVITY 0.5
+#define CAMERA_SPEED 20.0
+
 SDL_Window* glWindow = NULL;
 SDL_GLContext glContext;
 SDL_Event event;
 const Uint8* keyPress;
 int quit = 0;
-
-/* commentary: replace this with camera control variables */
-float angle = 0.f;
 
 B3DFile* b3dTest;
 int* textures;
@@ -334,6 +338,17 @@ int* loadTextures(B3DFile* b3d) {
 int main(int argc, char* argv[]) {
     char* b3dFilePath;
 
+    /* camera variables */
+    float angleX = 0.f, angleY = 0.f;
+    float positionX = 0.f, positionY = 0.f, positionZ = 0.f;
+
+    /* camera movement variables */
+    float forwardX = 0.f, forwardY = 0.f, forwardZ = 1.f;
+    float rightX = 1.f, rightY = 0.f, rightZ = 0.f;
+
+    /* memory to store only the rotation transform of the view matrix */
+    float viewRotation[16];
+
     if (argc < 2) b3dFilePath = "test1/test1.b3d";
     else b3dFilePath = argv[1];
 
@@ -383,18 +398,77 @@ int main(int argc, char* argv[]) {
     /* main loop */
 
     while (!quit) {
+        int differentialX = 0, differentialY = 0;
+        int mouseStates = 0;
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) quit = 1;
         }
 
         if (keyPress[SDL_SCANCODE_ESCAPE]) quit = 1;
 
+        mouseStates = SDL_GetRelativeMouseState(&differentialX, &differentialY);
+
+        /* change camera orientation when mouse dragged */
+        if (mouseStates & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+            angleX -= MOUSE_VERTICAL_SENSITIVITY * differentialY;
+            angleY -= MOUSE_HORIZONTAL_SENSITIVITY * differentialX;
+        }
+
+        /* use existing base vectors in view rotation matrix for movement */
+        forwardX = viewRotation[2];
+        forwardY = viewRotation[6];
+        forwardZ = viewRotation[10];
+
+        rightX = viewRotation[0];
+        rightY = viewRotation[4];
+        rightZ = viewRotation[8];
+
+        /* move camera forward when W pressed */
+        if (keyPress[SDL_SCANCODE_W]) {
+            positionX -= CAMERA_SPEED * forwardX;
+            positionY -= CAMERA_SPEED * forwardY;
+            positionZ -= CAMERA_SPEED * forwardZ;
+        }
+
+        /* move camera left when A pressed */
+        if (keyPress[SDL_SCANCODE_A]) {
+            positionX -= CAMERA_SPEED * rightX;
+            positionY -= CAMERA_SPEED * rightY;
+            positionZ -= CAMERA_SPEED * rightZ;
+        }
+
+        /* move camera backward when S pressed */
+        if (keyPress[SDL_SCANCODE_S]) {
+            positionX += CAMERA_SPEED * forwardX;
+            positionY += CAMERA_SPEED * forwardY;
+            positionZ += CAMERA_SPEED * forwardZ;
+        }
+
+        /* move camera right when D pressed */
+        if (keyPress[SDL_SCANCODE_D]) {
+            positionX += CAMERA_SPEED * rightX;
+            positionY += CAMERA_SPEED * rightY;
+            positionZ += CAMERA_SPEED * rightZ;
+        }
+
+        /* reset camera position and orientation when R pressed */
+        if (keyPress[SDL_SCANCODE_R]) {
+            positionX = 0.f;
+            positionY = 0.f;
+            positionZ = 0.f;
+            angleX = 0.f;
+            angleY = 0.f;
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         /* construct the view matrix */
         glLoadIdentity();
-        glTranslatef(0.f, -50.f, -100.f);
-        glRotatef(angle, 0.f, 1.f, 0.f); angle += 1.f;
+        glRotatef(-angleX, 1.f, 0.f, 0.f);
+        glRotatef(-angleY, 0.f, 1.f, 0.f);
+        glGetFloatv(GL_MODELVIEW_MATRIX, viewRotation);
+        glTranslatef(-positionX, -positionY, -positionZ);
         glScalef(1.f, 1.f, -1.f);
 
         drawB3D(b3dTest);
